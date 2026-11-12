@@ -1,0 +1,42 @@
+# Politique de l'agent de cryptage AP-HB
+# Copier en policy.yaml puis remplacer les clés publiques (cryptagent keygen).
+
+agent:
+  state_dir: /state
+
+# Liste blanche : l'agent n'agit QUE dans ces répertoires.
+roots:
+  - path: /data/dossiers_patients
+    mode: encrypt                 # encrypt : chiffre | monitor : signale sans toucher
+  - path: /data/exports_facturation
+    mode: encrypt
+  - path: /data/partage_public
+    mode: monitor
+
+# Clés PUBLIQUES uniquement. Les clés privées restent hors de l'hôte.
+recipients:
+  - name: aphb-exploitation
+    public_key: age1REPLACE_ME_PRIMARY
+  - name: aphb-sequestre        # clé de séquestre hors ligne (coffre RSSI/DPO)
+    public_key: age1REPLACE_ME_ESCROW
+
+classification:
+  min_level_to_encrypt: medium    # none < low < medium < high
+  sensitive_extensions: [.pdf, .docx, .xlsx, .csv, .hl7, .dcm, .json, .xml, .txt, .odt]
+  sensitive_name_patterns:
+    - "(?i)patient"
+    - "(?i)dossier"
+    - "(?i)(irm|scanner|radio|bilan|ordonnance|cr_|compte.?rendu)"
+  exclude_patterns: [".git/*", "*/.git/*"]
+  content_scan_max_bytes: 1048576
+
+encryption:
+  suffix: .age
+  remove_plaintext: true          # effacement du clair après vérification du chiffré
+  shred_passes: 1
+
+llm:
+  enabled: true
+  base_url: http://ollama:11434
+  model: qwen2.5:3b               # ou llama3.2:3b, mistral:7b
+  timeout_s: 120

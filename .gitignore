@@ -1,0 +1,17 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+
+# Données et secrets : JAMAIS dans le dépôt
+policy.yaml
+.cryptagent/
+state/
+demo_data/
+restored/
+keys/
+*.key
+*.age
+.env
