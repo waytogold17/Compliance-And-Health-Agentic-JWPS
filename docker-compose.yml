@@ -1,0 +1,49 @@
+# Pile complète : LLM local + agent en surveillance + console.
+# Aucun port exposé hors de la machine (127.0.0.1 uniquement).
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+    networks: [internal]
+    restart: unless-stopped
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on: [ollama]
+    environment:
+      OLLAMA_HOST: ollama:11434
+    entrypoint: ["sh", "-c", "sleep 5 && ollama pull ${OLLAMA_MODEL:-qwen2.5:3b}"]
+    networks: [internal]
+    restart: "no"
+
+  agent:
+    build: .
+    user: "${UID:-1000}:${GID:-1000}"   # même propriétaire que les fichiers montés
+    command: ["watch"]
+    volumes:
+      - ./demo_data:/data
+      - ./docker/policy.docker.yaml:/config/policy.yaml:ro
+      - ./state:/state
+    networks: [internal]
+    depends_on: [ollama]
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    user: "${UID:-1000}:${GID:-1000}"
+    entrypoint: ["streamlit", "run", "dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--", "--policy", "/config/policy.yaml"]
+    volumes:
+      - ./demo_data:/data
+      - ./docker/policy.docker.yaml:/config/policy.yaml:ro
+      - ./state:/state
+    ports:
+      - "127.0.0.1:8501:8501"
+    networks: [internal]
+    depends_on: [ollama]
+
+networks:
+  internal: {}
+
+volumes:
+  ollama: {}
